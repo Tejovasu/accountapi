@@ -1,0 +1,78 @@
+#%RAML 1.0
+title: accountapi
+version: v1
+/createaccount:
+  post:
+    body:
+      application/json:
+        example: 
+                  {
+                      "name":"rakesh",
+                      "mobileno":"6302653425",
+                      "emailid":"rakesh2@gmail.com"
+                  }
+    responses:
+      200:
+        body:
+          application/json:
+            example:    {
+
+              "message":"account created successfully"
+            }
+
+/accountdetails:
+  get:
+    queryParameters:
+      accountid:
+       example:                         
+               accountid = '1001'
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+                  [
+                      {
+                          "accountId": 1011,
+                          "dateOfBirth": "29-11-1996",
+                          "gender": "male",
+                          "phone": "6302653425",
+                          "name": "vasu",
+                          "email": "vasu@gmail.com"
+                      }
+                  ]
+
+/accountupdate:
+  put:
+    body:   
+      application/json:
+        example:
+                  {
+                       "acccountid":"1001",
+                       "name":"lucky",
+                       "gender":"female",
+                       "mobile":"9000000010",
+                       "emaiid":"nagalaxmi@gmail.com",
+                       "dob":"30-08-1997"
+                  }
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+                         {
+                           "message":"account successfully updated"
+                         }             
+/accountdelete:
+  delete:
+    queryParameters:
+      accountid:
+        example: accountid = '1008'
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              {
+                "message":"account deleted done"
+              }    

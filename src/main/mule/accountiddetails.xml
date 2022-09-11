@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="accountiddetailsFlow" doc:id="8f2477c8-6423-4f5c-87ff-b8d163c97fd6" >
+		<logger level="INFO" doc:name="Logger" doc:id="6455fd60-7aa4-44bd-9e02-daa9a088a061" message="Accountid retrive flow starts-------#[attributes.queryParams]"/>
+		<db:select doc:name="Select" doc:id="45bbcc6c-fecc-4905-a535-4da2f1c9b40d" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from account  where accountId = :accid;]]></db:sql>
+			<db:input-parameters><![CDATA[#[accid:attributes.queryParams.accountid]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="8b9d8c9b-b993-4999-97da-2386af9ce688" >
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<ee:transform doc:name="Transform Message" doc:id="f9cb4ef3-c582-4a89-b5b1-e954eafa0487">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="d75931ce-5d44-4276-bf74-c8ad52fdfff2" type="ACC:INVALID_ID" description="invalid account id"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="d9c80351-55c9-4e0d-9a74-7467d2d1d682" message="Response from DB -----------#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="347f66ab-e8f7-4ee0-83e9-42ece60f6397" type="ACC:INVALID_ID">
+				<ee:transform doc:name="Transform Message" doc:id="cad927f0-105d-4dc6-a995-cb1da180aece">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":400,
+	"message":"invalid account id"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpstatus" ><![CDATA[%dw 2.0
+output application/json
+---
+ 400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b90f36fd-f72f-4c05-8a62-659ee44a9d60" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="f2ca1f6a-0f80-4e1f-a4af-e77e49794c79">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":500,
+	"message":"DB server down plz try after some time"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

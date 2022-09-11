@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	
+	<flow name="createaccountFlow" doc:id="22eac4c6-8cf0-4442-803f-6f71c3e2202b" >
+		<logger level="INFO" doc:name="Logger" doc:id="6ccbe62e-1f73-4a05-ba07-d4b510c9bbb7" message="create account flow starts----"/>
+		<try doc:name="Try" doc:id="af5d449f-0ca3-40a6-a751-3061ffab15d4" >
+			<db:insert doc:id="1e6c5b1b-aa67-4594-86e3-6366f27fe31e" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into account (name,gender,phone,email,dateOfBirth)
+values (:name,:gender,:phone,:email,:dateOfBirth) ;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{ 
+	name:payload.name,
+	gender:payload.gender,
+	phone:payload.mobileno,
+	email:payload.emailid,
+	dateOfBirth:payload.dob	
+}]]]></db:input-parameters>
+		</db:insert>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="4f4b7e61-c7ca-4f85-91b2-b5d11f395152" >
+					<ee:transform doc:name="Transform Message" doc:id="b3b4d473-f40d-41db-b4b4-771e120c4718" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":500,
+	"message":"unable to process ur request due to server down plz try after some time"
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="c34730cb-2b0d-4c18-87fa-d97818954c83" message="Response from DB-------#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="dc66b4b8-ea7c-4cf0-8842-6f6ef9c77d00" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"account created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="86297980-9cca-400c-819d-9e8cf0fc3fbc" message="Final response sent---------#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="14eade24-a1a9-4fe1-bae1-6281c2e5af0e" >
+				<ee:transform doc:name="Transform Message" doc:id="47647a86-51c1-4f5a-a11e-21d7f388b9a0" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":500,
+	"message":"unable to process ur request due to DB down plz try after some time"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

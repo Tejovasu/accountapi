@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+     <http:listener-config name="accountapi-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config> 
+    <apikit:config name="accountapi-config" api="accountapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="accountapi-main">
+        <http:listener config-ref="accountapi-httpListenerConfig" path="/account/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="accountapi-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\accountupdate:application\json:accountapi-config">
+		<logger level="INFO" doc:name="Logger" doc:id="0aafce68-8083-4f49-a053-312004084379" message="request received-------#[payload]"/>
+		<flow-ref doc:name="updateaccountFlow" doc:id="19bfd301-d9d0-45b6-9ec2-93b1af25ce75" name="updateaccountFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7ec35008-5139-4ee2-96fa-6d83da655ce5" message="final response sent------#[payload]"/>
+    </flow>
+    <flow name="delete:\accountdelete:accountapi-config">
+		<logger level="INFO" doc:name="Logger" doc:id="28a21536-684c-4cfb-b1f6-89729d9bb13a" message="request received ------#[attributes.queryParams]"/>
+		<flow-ref doc:name="deleteaccountFlow" doc:id="dbac9492-310b-41f3-aca5-5e4541d61eb0" name="deleteaccountFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="74786224-4e71-4c6d-9b74-8d4bebd4c3a6" message="final response sent ------#[payload]"/>
+    </flow>
+    <flow name="get:\accountdetails:accountapi-config">
+        <logger level="INFO" doc:name="Logger" doc:id="3c976d90-8c23-4676-a0dd-d1ae1a8c10ac" message="request received-------#[attributes.queryParams]"/>
+		<flow-ref doc:name="account_id_details _Flow" doc:id="5de813e9-8162-424d-a05e-fd459950896e" name="accountiddetailsFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="35aee8de-affb-45f8-91d0-61bff05972a2" message="FINAL RESPONSE SENT------#[payload]"/>
+    </flow>
+    <flow name="post:\createaccount:application\json:accountapi-config">
+		<logger level="INFO" doc:name="Logger" doc:id="7ce5f464-3f99-448f-a29d-32126b67c7a5" message="Request Recived-------#[payload]"/>
+		<flow-ref doc:name="createaccountFlow" doc:id="e4ab9b6a-9f63-47e7-8309-1dd6b1ffce99" name="createaccountFlow"/>
+		<logger level="INFO" doc:name="Logger" doc:id="522623ab-89f9-4766-ad51-4513788b0a49" message="DATABASE response sent-------#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7b81de8a-9fa8-4a46-9a45-42773d8b0797" >
+				<ee:transform doc:name="Transform Message" doc:id="b26a1124-0b4e-4120-b258-145f2e002f4f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":500,
+	"message":"server down plz try after some time"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+</mule>

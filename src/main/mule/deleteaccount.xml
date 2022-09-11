@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="deleteaccountFlow" doc:id="01462a0f-5ac7-4e28-85bc-d4e0470cb888" >
+		<logger level="INFO" doc:name="Logger" doc:id="5c498311-f6ad-4a1c-9f82-5b9c257c9547" message="delete account flow starts------------"/>
+		<db:delete doc:name="Delete" doc:id="54fa4ce8-5ecd-42b6-9c32-5f2618f1294c" config-ref="Database_Config">
+			<db:sql ><![CDATA[delete  from account where accountId=:accid;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[accid:attributes.queryParams.accountid]]]></db:input-parameters>
+		</db:delete>
+		<logger level="INFO" doc:name="Logger" doc:id="e4424e66-9664-4f5f-8cfa-e43c89274c30" message="after connecting Db response-----#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="ecc45b3c-c8d9-427a-bdf7-6bcba4c76918" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message":"account successfully deleted"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="99d9b8fa-7e16-4271-8a83-aa0c0d5a633d" message="response sending-------------"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6db87b4b-002a-4d4a-9ecc-a8702092ed9f" >
+				<ee:transform doc:name="Transform Message" doc:id="f43b4e4c-6de8-488b-acab-506eb08624fd" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status code":500,
+	"message":"server down due to technical issues plz try after some time"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
